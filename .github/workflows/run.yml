@@ -1,0 +1,30 @@
+name: ARM64 Rust io_uring
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build-and-run:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check project size
+        id: size
+        run: |
+          COUNT=$(grep -c '^\[\[package\]\]' Cargo.lock 2>/dev/null || echo 0)
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -gt 5 ]; then
+            echo "use_cache=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "use_cache=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rust Cache
+        if: steps.size.outputs.use_cache == 'true'
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: false
+
+      - name: Compile & Execute
+        run: cargo run
